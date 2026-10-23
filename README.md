@@ -2,7 +2,7 @@
 
 A URL shortener with click analytics, built phase by phase as a hands-on DevOps and SRE project. The application is intentionally simple. The goal is to show how a service is built, tested, secured, shipped, observed and kept reliable.
 
-> **Status:** Phase 0 is complete (working application and Git workflow). Later phases are planned and are marked as such throughout this document, so nothing here claims more than what exists.
+> **Status:** Phases 0 and 1 are complete (working application, Git workflow and Docker Compose). Later phases are planned and are marked as such throughout this document, so nothing here claims more than what exists.
 
 ## Table of contents
 
@@ -39,7 +39,7 @@ A URL shortener with click analytics, built phase by phase as a hands-on DevOps 
 |---|---|
 | Application (API and frontend) | Done |
 | Git workflow and branch protection | Done |
-| Containerization | Planned (Phase 1) |
+| Containerization | Done |
 | Continuous integration | Planned (Phase 2) |
 | Cloud deployment | Planned (Phase 3) |
 | Infrastructure as Code | Planned (Phase 4) |
@@ -220,7 +220,7 @@ The redirect uses `302` rather than `301`. A `301` is cached by browsers, so rep
 | API | Node.js, Express | 0 |
 | Database | MongoDB with Mongoose | 0 |
 | Cache and queue | Redis | 1 and later |
-| Containers | Docker, Docker Compose | 1 |
+| Containers | Docker, Docker Compose, Nginx | 1 |
 | CI/CD | GitHub Actions | 2 and 3 |
 | Cloud | AWS (EC2, then EKS) | 3 and 5 |
 | IaC | Terraform | 4 |
@@ -241,8 +241,9 @@ linkpulse/
 │   │       ├── routes/     # API routes
 │   │       ├── utils/      # Short code generator
 │   │       └── server.js
-│   └── frontend/           # React and Vite app
+│   └── frontend/           # React and Vite app, Dockerfile and nginx.conf
 ├── docs/                   # Architecture notes, SLOs, runbooks, postmortems
+├── docker-compose.yml      # api, frontend and mongo
 ├── .gitignore
 └── README.md
 ```
@@ -251,18 +252,38 @@ Directories added in later phases: `infra/terraform`, `infra/k8s`, `.github/work
 
 ## Getting started
 
-### Prerequisites
+### Option A: Docker Compose (recommended)
+
+Requires Docker with the Compose plugin.
+
+```bash
+docker compose up --build
+```
+
+Open `http://localhost:8080`. Nginx serves the frontend and forwards `/api/*` and short links to the API. MongoDB data is kept in the `mongo-data` volume.
+
+```bash
+docker compose ps          # all services should become "healthy"
+docker compose logs -f api # follow API logs
+docker compose down        # stop (add -v to also delete the database volume)
+```
+
+To change the public base URL used in short links, copy `.env.example` to `.env` and edit `BASE_URL`.
+
+### Option B: Run without Docker
+
+#### Prerequisites
 
 - Node.js 20 or later
 - Docker (used here only to run MongoDB) or a local MongoDB installation
 
-### 1. Start MongoDB
+#### 1. Start MongoDB
 
 ```bash
 docker run -d --name linkpulse-mongo -p 27017:27017 mongo:7
 ```
 
-### 2. Start the API
+#### 2. Start the API
 
 ```bash
 cd app/api
@@ -273,7 +294,7 @@ npm run dev
 
 The API listens on `http://localhost:5000`.
 
-### 3. Start the frontend
+#### 3. Start the frontend
 
 ```bash
 cd app/frontend
@@ -283,7 +304,7 @@ npm run dev
 
 The app is available at `http://localhost:5173`. The dev server proxies `/api` requests to the API.
 
-### 4. Verify
+#### 4. Verify
 
 ```bash
 curl http://localhost:5000/health
@@ -350,7 +371,7 @@ Response (`201 Created`):
 | Environment | Purpose | Introduced |
 |---|---|---|
 | Local | Development with Node and a MongoDB container | Phase 0 |
-| Local containers | Full stack with Docker Compose | Phase 1 |
+| Local containers | Full stack with Docker Compose | Phase 1 (done) |
 | Cloud | Single EC2 instance with Nginx and HTTPS | Phase 3 |
 | Cluster | Kubernetes managed by ArgoCD | Phase 5 and 6 |
 
@@ -387,7 +408,7 @@ Planned: non-root containers, image and dependency scanning, secret scanning in 
 ## Roadmap
 
 - [x] **Phase 0:** Application and Git workflow
-- [ ] **Phase 1:** Docker and Docker Compose
+- [x] **Phase 1:** Docker and Docker Compose
 - [ ] **Phase 2:** CI with GitHub Actions
 - [ ] **Phase 3:** First deployment (EC2, Nginx, HTTPS) and continuous delivery
 - [ ] **Phase 4:** Infrastructure as Code with Terraform
