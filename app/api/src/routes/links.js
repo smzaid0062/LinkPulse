@@ -34,7 +34,7 @@ router.post('/', async (req, res, next) => {
       return res.status(400).json({ error: 'URL bahut lamba hai (max 2048 chars)' });
     }
 
-    // Collision aaye (duplicate key) to naya code try karo
+   // On a code collision (duplicate key), retry with a new code
     for (let attempt = 0; attempt < 5; attempt++) {
       try {
         const link = await Link.create({ code: generateCode(), longUrl: url.trim() });

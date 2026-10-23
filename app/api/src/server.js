@@ -12,7 +12,7 @@ const MONGO_URI = process.env.MONGO_URI || 'mongodb://127.0.0.1:27017/linkpulse'
 app.use(cors());
 app.use(express.json({ limit: '10kb' }));
 
-// Health check (Docker / Kubernetes probes mein kaam aayega)
+// Health check (used by Docker and Kubernetes probes)
 app.get('/health', (_req, res) => {
   const dbUp = mongoose.connection.readyState === 1;
   res.status(dbUp ? 200 : 503).json({ status: dbUp ? 'ok' : 'degraded', db: dbUp });
@@ -20,7 +20,7 @@ app.get('/health', (_req, res) => {
 
 app.use('/api/links', linksRouter);
 
-// Redirect: GET /aB3xK9  -> 302 -> longUrl  (302 taaki har click server tak aaye)
+// Redirect: GET /aB3xK9 -> 302 -> longUrl (302 so every click reaches the server)
 app.get('/:code([0-9A-Za-z]{4,12})', async (req, res, next) => {
   try {
     const link = await Link.findOneAndUpdate(
